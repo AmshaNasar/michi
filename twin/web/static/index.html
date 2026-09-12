@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Michi — your digital twin</title>
+  <meta name="description" content="A calm, proactive assistant that turns kept commitments into a growing sakura." />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <!--
+    Icons are inlined as an SVG sprite rather than pulled from a CDN: this is a
+    local-only app and should keep working with no network. Drawn in lucide's
+    style (24x24, 2px round strokes) to match the original design.
+  -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></symbol>
+      <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></symbol>
+      <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+      <symbol id="i-flower" viewBox="0 0 24 24"><circle cx="12" cy="8" r="2"/><path d="M12 10v12"/><path d="M12 22c4.2 0 7-1.667 7-5-4.2 0-7 1.667-7 5z"/><path d="M12 22c-4.2 0-7-1.667-7-5 4.2 0 7 1.667 7 5z"/><path d="M12 6a3 3 0 1 0-3-3 3 3 0 0 0 3 3z" opacity=".55"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6h4"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 19v3"/><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"><svg class="ico ico-sm"><use href="#i-leaf"/></svg></span>
+        Michi
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-item nav-item-active"><svg class="ico"><use href="#i-sparkles"/></svg><span>Today</span></button>
+        <button class="nav-item"><svg class="ico"><use href="#i-inbox"/></svg><span>Inbox</span><span class="nav-count" id="nav-inbox">–</span></button>
+        <button class="nav-item"><svg class="ico"><use href="#i-calendar"/></svg><span>Calendar</span></button>
+        <button class="nav-item"><svg class="ico"><use href="#i-sprout"/></svg><span>Projects</span><span class="nav-count" id="nav-projects">–</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="streak-block">
+          <p class="section-label">This week</p>
+          <p class="streak-value" id="streak-value">— day streak</p>
+          <div class="streak-meta">
+            <svg class="ico ico-sm" style="color:var(--accent)"><use href="#i-flame"/></svg>
+            <span id="streak-kept">— commitments kept</span>
+          </div>
+        </div>
+        <button class="nav-item"><svg class="ico"><use href="#i-settings"/></svg><span>Settings</span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="section-label" id="today-date">&nbsp;</p>
+          <h1 id="greeting">Loading…</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="rank-badge" id="rank-badge" aria-label="Garden rank">
+            <svg class="ico ico-sm"><use href="#i-flower"/></svg>
+            <span id="rank-label">Garden I</span>
+          </div>
+          <button class="icon-button" id="refresh" aria-label="Refresh" title="Refresh">
+            <svg class="ico"><use href="#i-rotate"/></svg>
+          </button>
+          <div class="avatar" id="avatar" aria-label="Profile">·</div>
+        </div>
+      </header>
+
+      <div class="panels">
+        <section class="panel panel-garden garden-panel">
+          <div class="lantern-scene" aria-hidden="true">
+            <div class="lantern lantern-left"><span></span></div>
+            <div class="lantern lantern-middle"><span></span></div>
+            <div class="lantern lantern-right"><span></span></div>
+          </div>
+          <span class="garden-kanji" aria-hidden="true">静</span>
+
+          <div class="panel-head">
+            <div>
+              <p class="section-label">Your living progress</p>
+              <h2 id="stage-name">—</h2>
+            </div>
+            <div class="progress-figure">
+              <strong id="progress-value">0%</strong>
+              <span>daily harmony</span>
+            </div>
+          </div>
+
+          <div class="tree-stage">
+            <div class="tree-halo" aria-hidden="true"></div>
+            <img id="tree" class="tree-image animate-tree-reveal" src="/static/assets/sakura-stage-1.png"
+                 width="816" height="816" alt="Cherry blossom tree at growth stage 1 of 7" />
+          </div>
+
+          <div class="growth-meta">
+            <div class="growth-meta-row">
+              <span id="cleared-label">— of — cleared today</span>
+              <span id="xp-label">+0 bloom XP</span>
+            </div>
+            <div class="growth-track"><div class="growth-fill" id="growth-fill" style="width:0%"></div></div>
+            <div class="stage-row" id="stage-row" aria-label="Growth stages"></div>
+          </div>
+        </section>
+
+        <section class="panel panel-tasks">
+          <div class="notice-scroll">
+            <p class="section-label">Michi noticed</p>
+            <p class="notice-text" id="notice">Waking up…</p>
+          </div>
+
+          <div class="quests-head">
+            <div>
+              <div class="quests-head-label">
+                <p class="section-label">Today’s quests</p>
+                <span class="reward-chip" id="reward-chip">0 XP</span>
+              </div>
+              <p class="quests-subtitle">Clear the small things. Protect the deep work.</p>
+            </div>
+            <button class="icon-button" id="toggle-add" aria-label="Add project" title="Track a project">
+              <svg class="ico"><use href="#i-plus"/></svg>
+            </button>
+          </div>
+
+          <form class="add-form" id="add-form" hidden>
+            <input class="input-field" id="new-project" placeholder="What are you working on?" aria-label="New project" />
+            <button class="primary-button" type="submit">Track</button>
+          </form>
+
+          <div class="quest-list" id="quest-list"></div>
+
+          <div class="composer-wrap">
+            <div class="transcript" id="transcript"></div>
+            <form class="composer" id="chat-form">
+              <button type="button" class="icon-button-subtle" id="mic" aria-label="Voice input" title="Voice is available in the terminal: twin.cli voice">
+                <svg class="ico"><use href="#i-mic"/></svg>
+              </button>
+              <input id="prompt" placeholder="Ask your twin to plan, find, or remember…" aria-label="Message your twin" autocomplete="off" />
+              <button type="submit" class="send-button" id="send" aria-label="Send">
+                <svg class="ico"><use href="#i-send"/></svg>
+              </button>
+            </form>
+            <p class="composer-footnote" id="footnote">&nbsp;</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

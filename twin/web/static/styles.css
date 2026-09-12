@@ -1,0 +1,1034 @@
+/*
+ * Michi design system, ported from the Tailwind v4 source.
+ *
+ * The original expressed its look through `@theme inline` variables and
+ * `@utility` blocks. Those port almost directly to custom properties and
+ * plain classes; what needed writing by hand is the layout, which the source
+ * expressed as Tailwind utility classes in JSX.
+ *
+ * Colours stay in oklch exactly as authored -- converting them to hex would
+ * shift the hues.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Shippori+Mincho:wght@500;600;700&display=swap");
+
+:root {
+  --radius: 0.375rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+
+  --background: oklch(0.982 0.008 84);
+  --foreground: oklch(0.25 0.018 66);
+  --card: oklch(0.992 0.004 84);
+  --primary: oklch(0.55 0.09 148);
+  --primary-foreground: oklch(0.985 0.005 90);
+  --muted: oklch(0.95 0.012 82);
+  --muted-foreground: oklch(0.53 0.022 62);
+  --accent: oklch(0.74 0.11 18);
+  --accent-foreground: oklch(0.26 0.02 65);
+  --destructive: oklch(0.56 0.17 30);
+  --border: oklch(0.88 0.02 78);
+  --input: oklch(0.88 0.02 78);
+  --ring: oklch(0.55 0.09 148);
+  --wood: oklch(0.88 0.045 74);
+  --wood-foreground: oklch(0.32 0.03 66);
+  --lantern: oklch(0.61 0.13 34);
+  --lantern-glow: oklch(0.84 0.1 78);
+  --sidebar: oklch(0.955 0.025 77);
+
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Shippori Mincho", Georgia, serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  /* The faint vertical rule that gives the page its paper-like grid. */
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--wood) 9%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 72px 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Sprite icons, drawn in lucide's style: stroked, not filled. */
+.ico {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ico-sm {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* -------------------------------------------------------------------------
+ * Layout
+ * ---------------------------------------------------------------------- */
+
+.shell {
+  display: grid;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .shell {
+    grid-template-columns: 210px 1fr;
+  }
+}
+
+.sidebar {
+  display: none;
+  flex-direction: column;
+  border-right: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background-color: var(--sidebar);
+  padding: 1.75rem 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    display: flex;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.brand-mark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.nav {
+  margin-top: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.streak-block {
+  margin-bottom: 1.75rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 0;
+}
+
+.streak-value {
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+.streak-meta {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.main {
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  height: 5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  padding: 0 1.25rem;
+}
+
+.topbar h1 {
+  margin-top: 0.25rem;
+  font-size: 1.5rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background-color: var(--wood);
+  color: var(--wood-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.panels {
+  display: grid;
+}
+
+@media (min-width: 1024px) {
+  .panels {
+    grid-template-columns: minmax(430px, 1.12fr) minmax(380px, 0.88fr);
+  }
+  .topbar {
+    padding: 0 2.25rem;
+  }
+}
+
+.panel {
+  display: flex;
+  min-height: 590px;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1.75rem 1.25rem;
+}
+
+.panel-garden {
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+  .panel-garden {
+    padding: 1.75rem 2.5rem;
+  }
+  .panel-tasks {
+    padding: 1.75rem 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .panel-garden {
+    border-bottom: 0;
+    border-right: 1px solid var(--border);
+  }
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-head h2 {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .panel-head h2 {
+    font-size: 2.25rem;
+  }
+}
+
+.progress-figure {
+  text-align: right;
+}
+
+.progress-figure strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-figure span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.tree-stage {
+  position: relative;
+  display: flex;
+  min-height: 355px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.growth-meta {
+  position: relative;
+  z-index: 2;
+}
+
+.growth-meta-row {
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.stage-row {
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+/* -------------------------------------------------------------------------
+ * Ported utilities
+ * ---------------------------------------------------------------------- */
+
+.section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.icon-button {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.icon-button:hover {
+  background-color: var(--muted);
+  transform: translateY(-1px);
+}
+
+.icon-button-subtle {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.icon-button-subtle:hover {
+  color: var(--foreground);
+  background-color: var(--muted);
+}
+
+.nav-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.nav-item:hover {
+  background-color: color-mix(in oklab, var(--wood) 45%, transparent);
+  color: var(--foreground);
+}
+
+.nav-item-active {
+  background-color: color-mix(in oklab, var(--wood) 58%, transparent);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.nav-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.garden-panel {
+  background-image:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--background) 10%, transparent),
+      color-mix(in oklab, var(--wood) 18%, transparent)
+    ),
+    repeating-radial-gradient(
+      ellipse at 50% 84%,
+      transparent 0 25px,
+      color-mix(in oklab, var(--primary) 8%, transparent) 26px 27px,
+      transparent 28px 46px
+    );
+}
+
+.garden-kanji {
+  position: absolute;
+  right: 1.75rem;
+  bottom: 7.5rem;
+  color: color-mix(in oklab, var(--foreground) 5%, transparent);
+  font-family: var(--font-display);
+  font-size: clamp(6rem, 12vw, 10rem);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tree-halo {
+  position: absolute;
+  width: min(70vw, 23rem);
+  height: min(70vw, 23rem);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  filter: blur(1px);
+}
+
+.tree-image {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 31rem);
+  max-height: 390px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 18px color-mix(in oklab, var(--foreground) 13%, transparent));
+}
+
+.lantern-scene {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 13rem;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.62;
+}
+
+.lantern {
+  position: absolute;
+  top: -0.4rem;
+  width: 2px;
+  height: 5.5rem;
+  background-color: color-mix(in oklab, var(--foreground) 24%, transparent);
+  transform-origin: top center;
+  animation: lantern-sway 5.6s ease-in-out infinite;
+}
+
+.lantern::before {
+  content: "";
+  position: absolute;
+  left: -0.35rem;
+  bottom: -0.18rem;
+  width: 0.8rem;
+  height: 0.22rem;
+  border-radius: 1px;
+  background-color: var(--foreground);
+}
+
+.lantern span {
+  position: absolute;
+  left: -0.82rem;
+  top: 5.4rem;
+  width: 1.7rem;
+  height: 2.2rem;
+  border: 1px solid color-mix(in oklab, var(--lantern) 72%, var(--foreground));
+  border-radius: 0.3rem 0.3rem 0.5rem 0.5rem;
+  background-color: color-mix(in oklab, var(--lantern-glow) 52%, transparent);
+  box-shadow: 0 0 28px color-mix(in oklab, var(--lantern-glow) 42%, transparent);
+}
+
+.lantern span::before,
+.lantern span::after {
+  content: "";
+  position: absolute;
+  left: -0.12rem;
+  width: 1.92rem;
+  height: 0.18rem;
+  border-radius: 1px;
+  background-color: var(--lantern);
+}
+
+.lantern span::before {
+  top: -0.13rem;
+}
+
+.lantern span::after {
+  bottom: -0.13rem;
+}
+
+.lantern-left {
+  left: 13%;
+  animation-delay: -1.1s;
+}
+
+.lantern-middle {
+  left: 48%;
+  height: 3.4rem;
+  opacity: 0.48;
+  animation-delay: -3.2s;
+}
+
+.lantern-middle span {
+  top: 3.3rem;
+  transform: scale(0.78);
+}
+
+.lantern-right {
+  right: 12%;
+  height: 4.6rem;
+  animation-delay: -4.4s;
+}
+
+.lantern-right span {
+  top: 4.5rem;
+  transform: scale(0.9);
+}
+
+.growth-track {
+  height: 0.5rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, var(--border));
+  border-radius: 999px;
+  background-color: color-mix(in oklab, var(--muted) 84%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.growth-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 38%, transparent);
+  transition: width 700ms ease;
+}
+
+.stage-button {
+  display: flex;
+  min-width: 1.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+}
+
+.stage-button-active {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.stage-button-active .stage-dot {
+  transform: scale(1.35);
+  border-color: var(--primary);
+  background-color: color-mix(in oklab, var(--primary) 12%, var(--background));
+}
+
+.stage-button-active .stage-flower {
+  opacity: 1;
+}
+
+.stage-dot {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--background);
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.stage-flower {
+  width: 0.65rem;
+  height: 0.65rem;
+  opacity: 0.22;
+}
+
+.stage-number {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .stage-number {
+    display: block;
+  }
+}
+
+.rank-badge {
+  display: none;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--border));
+  border-radius: 999px;
+  background-color: color-mix(in oklab, var(--primary) 7%, var(--background));
+  padding: 0 0.8rem;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .rank-badge {
+    display: flex;
+  }
+}
+
+.reward-chip {
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  background-color: color-mix(in oklab, var(--accent) 9%, var(--background));
+  padding: 0.16rem 0.45rem;
+  color: var(--accent-foreground);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.notice-scroll {
+  position: relative;
+  border-left: 3px solid var(--accent);
+  border-right: 1px solid color-mix(in oklab, var(--wood) 55%, transparent);
+  background-color: color-mix(in oklab, var(--wood) 18%, transparent);
+  padding: 0.85rem 1rem;
+}
+
+.notice-scroll::before,
+.notice-scroll::after {
+  content: "";
+  position: absolute;
+  right: -0.2rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background-color: var(--wood-foreground);
+  opacity: 0.25;
+}
+
+.notice-scroll::before {
+  top: 0.45rem;
+}
+
+.notice-scroll::after {
+  bottom: 0.45rem;
+}
+
+.notice-text {
+  margin-top: 0.5rem;
+  max-width: 36rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.quests-head {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quests-head-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quests-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.quest-list {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.quest {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  transition: opacity 160ms ease;
+}
+
+.quest + .quest {
+  border-top: 1px solid var(--border);
+}
+
+.quest-done {
+  opacity: 0.5;
+}
+
+.quest-done .quest-title {
+  text-decoration: line-through;
+}
+
+.quest-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.quest-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.quest-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-detail {
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-time {
+  display: none;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .quest-time {
+    display: block;
+  }
+}
+
+.check-button {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.check-button:hover {
+  border-color: var(--primary);
+}
+
+.check-button-done {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.text-button {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+  transition: opacity 160ms ease, color 160ms ease;
+}
+
+.text-button:hover {
+  color: var(--destructive);
+}
+
+@media (min-width: 768px) {
+  .quest .text-button {
+    opacity: 0;
+  }
+  .quest:hover .text-button,
+  .quest:focus-within .text-button {
+    opacity: 1;
+  }
+}
+
+.empty-state {
+  padding: 2.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.add-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  animation: fade-in 200ms ease-out both;
+}
+
+/* A display rule beats the `hidden` attribute, so restore it explicitly. */
+.add-form[hidden] {
+  display: none;
+}
+
+.input-field {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--card);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: var(--ring);
+}
+
+.primary-button {
+  border-radius: var(--radius-sm);
+  background-color: var(--primary);
+  padding: 0.65rem 1rem;
+  color: var(--primary-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.composer-wrap {
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.composer {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--card);
+  padding: 0.4rem 0.45rem;
+  box-shadow: 0 12px 34px color-mix(in oklab, var(--foreground) 6%, transparent);
+}
+
+.composer input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: inherit;
+}
+
+.composer input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.send-button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.send-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.composer-footnote {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.transcript {
+  max-height: 13rem;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bubble {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  max-width: 90%;
+  white-space: pre-wrap;
+}
+
+.bubble-user {
+  align-self: flex-end;
+  background-color: color-mix(in oklab, var(--primary) 12%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
+}
+
+.bubble-twin {
+  align-self: flex-start;
+  background-color: color-mix(in oklab, var(--wood) 22%, transparent);
+  border: 1px solid color-mix(in oklab, var(--wood) 45%, transparent);
+}
+
+.bubble-pending {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* -------------------------------------------------------------------------
+ * Motion
+ * ---------------------------------------------------------------------- */
+
+@keyframes tree-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes lantern-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+@keyframes petal-fall {
+  0% {
+    opacity: 0;
+    transform: translate(0, -20px) rotate(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(70px, 180px) rotate(220deg);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tree-reveal {
+  animation: tree-reveal 600ms ease-out both;
+}
+
+.petal {
+  position: absolute;
+  z-index: 2;
+  width: 0.65rem;
+  height: 0.45rem;
+  border-radius: 70% 30% 70% 30%;
+  background-color: var(--accent);
+  animation: petal-fall 2s ease-in both;
+}
+
+.petal-one {
+  top: 36%;
+  left: 45%;
+}
+
+.petal-two {
+  top: 29%;
+  left: 61%;
+  animation-delay: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
