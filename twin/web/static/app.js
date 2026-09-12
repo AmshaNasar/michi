@@ -9,6 +9,8 @@
  * reconcile an optimistic guess against what the twin actually did.
  */
 
+import { renderCherryBlossom } from "/static/tree.js";
+
 const KIND_ICON = {
   email: "#i-mail",
   calendar: "#i-calendar",
@@ -91,20 +93,20 @@ function render(next) {
     : "No accounts connected yet — run onboarding to add Gmail, Slack, or Notion";
 }
 
-function renderTree() {
-  const tree = el("tree");
-  const src = "/static/assets/sakura-stage-" + (state.stage + 1) + ".png";
-  if (tree.getAttribute("src") !== src) {
-    tree.setAttribute("src", src);
-    tree.setAttribute(
-      "alt",
-      state.stage_name + " cherry blossom tree, growth stage " + (state.stage + 1) + " of 7"
-    );
-    // Restart the reveal animation on change.
-    tree.classList.remove("animate-tree-reveal");
-    void tree.offsetWidth;
-    tree.classList.add("animate-tree-reveal");
-  }
+let renderedStage = null;
+
+function renderTree(stage) {
+  const target = stage === undefined ? state.stage : stage;
+  // Rebuilding is a few thousand SVG nodes, so only do it when the stage
+  // actually changes -- the 60s state poll would otherwise replay the whole
+  // grow-and-bloom animation every minute.
+  if (renderedStage === target) return;
+  renderedStage = target;
+
+  renderCherryBlossom(el("tree"), target, state.stage_names.length);
+  el("tree-caption").textContent =
+    state.stage_names[target] + " cherry blossom tree, growth stage " +
+    (target + 1) + " of " + state.stage_names.length;
 }
 
 function renderStages() {
@@ -126,8 +128,7 @@ function renderStages() {
 }
 
 function previewStage(index) {
-  const tree = el("tree");
-  tree.setAttribute("src", "/static/assets/sakura-stage-" + (index + 1) + ".png");
+  renderTree(index);
   el("stage-name").textContent = state.stage_names[index];
   document.querySelectorAll(".stage-button").forEach((button, position) => {
     button.classList.toggle("stage-button-active", position === index);
