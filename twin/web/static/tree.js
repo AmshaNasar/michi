@@ -75,6 +75,8 @@ function buildTree(seed) {
       delay: startTime,
       duration,
       blossoms,
+      // Kept so the viewBox can be fitted to whatever is actually visible.
+      points: [[x, y], [cx, cy], [ex, ey]],
     });
 
     if (depth >= MAX_DEPTH || length < 9) return;
@@ -107,6 +109,70 @@ function depthForStage(stage, stageCount) {
   const span = MAX_DEPTH - 2;
   const ratio = stageCount > 1 ? stage / (stageCount - 1) : 1;
   return Math.round(2 + span * ratio);
+}
+
+/* Proportions, expressed as fractions of the tree's own span.
+ *
+ * The source geometry was authored against a fixed 1040-unit viewBox showing a
+ * finished tree. Fitting the frame to each stage means those absolute numbers
+ * no longer hold: in a tight frame a 32-unit trunk reads as 6% of the width
+ * (stubby) while a 6-unit blossom reads as under 1% (invisible). Deriving both
+ * from the span keeps the tree looking like the same tree at every size. */
+const TRUNK_FRACTION = 0.026;
+const BLOSSOM_FRACTION = 0.022;
+const BASE_TRUNK_WIDTH = 32;
+const BASE_BLOSSOM_RADIUS = 6;
+
+/* Fit the frame to what's on screen.
+ *
+ * A fixed viewBox sized for the finished tree leaves a sapling as a speck in
+ * the bottom of the panel. Measuring the visible geometry instead means every
+ * stage fills the frame and the tree grows toward the viewer.
+ *
+ * Done in two passes because blossom size depends on the span, and the span
+ * depends on where the blossoms land: branches first to get the scale, then
+ * everything to get the final box. */
+function fitViewBox(branches, blossoms) {
+  const bounds = () => ({ minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+  const include = (b, x, y, pad) => {
+    b.minX = Math.min(b.minX, x - pad);
+    b.maxX = Math.max(b.maxX, x + pad);
+    b.minY = Math.min(b.minY, y - pad);
+    b.maxY = Math.max(b.maxY, y + pad);
+  };
+
+  const branchBounds = bounds();
+  branches.forEach((branch) => {
+    branch.points.forEach(([x, y]) => include(branchBounds, x, y, 0));
+  });
+  include(branchBounds, 0, 0, 0);
+
+  const span = Math.max(
+    branchBounds.maxX - branchBounds.minX,
+    branchBounds.maxY - branchBounds.minY,
+    1
+  );
+
+  const strokeScale = (span * TRUNK_FRACTION) / BASE_TRUNK_WIDTH;
+  const blossomScale = (span * BLOSSOM_FRACTION) / BASE_BLOSSOM_RADIUS;
+
+  const full = bounds();
+  branches.forEach((branch) => {
+    branch.points.forEach(([x, y]) => include(full, x, y, branch.width * strokeScale * 0.5));
+  });
+  blossoms.forEach((blossom) => include(full, blossom.x, blossom.y, blossom.r * blossomScale));
+  include(full, 0, 0, span * TRUNK_FRACTION);
+
+  const width = full.maxX - full.minX;
+  const height = full.maxY - full.minY;
+  const pad = Math.max(width, height) * 0.07;
+
+  return {
+    box: [full.minX - pad, full.minY - pad, width + pad * 2, height + pad * 2],
+    groundRadius: Math.max(width * 0.4, span * 0.08),
+    strokeScale,
+    blossomScale,
+  };
 }
 
 function element(name, attributes) {
@@ -154,12 +220,17 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
   if (!cachedTree) cachedTree = buildTree(seed || 20260912);
 
   const maxDepth = depthForStage(stage, stageCount);
-  // Buds on a young tree are smaller than blossoms on an old one.
-  const blossomScale = 0.55 + 0.45 * (stageCount > 1 ? stage / (stageCount - 1) : 1);
+
+  const visible = cachedTree.filter((branch) => branch.depth < maxDepth);
+  const shownBlossoms = visible
+    .filter((branch) => branch.depth === maxDepth - 1)
+    .reduce((all, branch) => all.concat(branch.blossoms), []);
+
+  const { box, groundRadius, strokeScale, blossomScale } = fitViewBox(visible, shownBlossoms);
 
   const svg = element("svg", {
     class: "cbt-canvas",
-    viewBox: "-520 -1100 1040 1120",
+    viewBox: box.map((n) => n.toFixed(1)).join(" "),
     preserveAspectRatio: "xMidYMax meet",
     "aria-hidden": "true",
   });
@@ -179,30 +250,36 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
 
   svg.appendChild(
     element("ellipse", {
-      cx: 0, cy: 4, rx: 230, ry: 24, class: "cbt-ground", filter: "url(#cbt-soft)",
+      cx: 0, cy: 4,
+      rx: groundRadius.toFixed(1), ry: (groundRadius * 0.1).toFixed(1),
+      class: "cbt-ground", filter: "url(#cbt-soft)",
     })
   );
 
   const sway = element("g", { class: "cbt-sway" });
-  const scaled = element("g", { transform: "scale(1.35)" });
+  // No fixed scale: the fitted viewBox already sizes the tree to the frame.
+  const scaled = element("g", {});
 
   // The canopy glow only makes sense once there's a canopy.
-  if (stage >= Math.floor(stageCount / 2)) {
-    const glow = element("ellipse", {
-      cx: 0, cy: -470, rx: 360, ry: 250,
-      fill: "url(#cbt-canopy)", class: "cbt-canopy-glow",
-    });
-    scaled.appendChild(glow);
+  if (stage >= Math.floor(stageCount / 2) && shownBlossoms.length) {
+    const cx = shownBlossoms.reduce((sum, b) => sum + b.x, 0) / shownBlossoms.length;
+    const cy = shownBlossoms.reduce((sum, b) => sum + b.y, 0) / shownBlossoms.length;
+    scaled.appendChild(
+      element("ellipse", {
+        cx: cx.toFixed(1), cy: cy.toFixed(1),
+        rx: (box[2] * 0.38).toFixed(1), ry: (box[3] * 0.3).toFixed(1),
+        fill: "url(#cbt-canopy)", class: "cbt-canopy-glow",
+      })
+    );
   }
 
-  const visible = cachedTree.filter((branch) => branch.depth < maxDepth);
   visible.forEach((branch) => {
     const path = element("path", {
       class: "cbt-branch",
       d: branch.d,
       pathLength: 1,
       stroke: "url(#cbt-bark)",
-      "stroke-width": branch.width.toFixed(2),
+      "stroke-width": (branch.width * strokeScale).toFixed(2),
       "stroke-linecap": "round",
       fill: "none",
     });
@@ -213,13 +290,9 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
 
   // Only the outermost band blossoms, so the canopy sits at the tips rather
   // than flowering all the way down the trunk.
-  visible
-    .filter((branch) => branch.depth === maxDepth - 1)
-    .forEach((branch) => {
-      branch.blossoms.forEach((blossom) => {
-        scaled.appendChild(blossomNode(blossom, blossomScale));
-      });
-    });
+  shownBlossoms.forEach((blossom) => {
+    scaled.appendChild(blossomNode(blossom, blossomScale));
+  });
 
   sway.appendChild(scaled);
   svg.appendChild(sway);
