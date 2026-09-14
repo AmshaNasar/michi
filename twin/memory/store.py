@@ -215,6 +215,21 @@ def list_open_deadlines(within_days: Optional[int] = None) -> List[Dict[str, Any
         return [dict(row) for row in cur.fetchall()]
 
 
+def list_completed_today() -> List[Dict[str, Any]]:
+    """Deadlines cleared today.
+
+    The tree shows one blossom per task, and a task that's been done still
+    belongs on the branch -- in full bloom rather than as a bud.
+    """
+    with cursor() as cur:
+        cur.execute(
+            "SELECT * FROM deadlines "
+            "WHERE status = 'done' AND completed_at::date = current_date "
+            "ORDER BY completed_at ASC"
+        )
+        return [dict(row) for row in cur.fetchall()]
+
+
 def set_deadline_status(deadline_id: int, status: str) -> Optional[Dict[str, Any]]:
     """Update a deadline's status, stamping completion time when it's done.
 

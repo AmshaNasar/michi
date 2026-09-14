@@ -93,20 +93,46 @@ function render(next) {
     : "No accounts connected yet — run onboarding to add Gmail, Slack, or Notion";
 }
 
-let renderedStage = null;
+let renderedSignature = null;
 
-function renderTree(stage) {
-  const target = stage === undefined ? state.stage : stage;
-  // Rebuilding is a few thousand SVG nodes, so only do it when the stage
-  // actually changes -- the 60s state poll would otherwise replay the whole
-  // grow-and-bloom animation every minute.
-  if (renderedStage === target) return;
-  renderedStage = target;
+/* The tree is the task list. Its size comes from how many tasks there are and
+ * its bloom from how many are done, so it only needs rebuilding when that
+ * actually changes -- otherwise the 60s poll would replay the whole
+ * grow-and-bloom animation every minute. */
+function taskSignature(tasks) {
+  return tasks.map((task) => task.id + (task.done ? ":1" : ":0")).join("|");
+}
 
-  renderCherryBlossom(el("tree"), target, state.stage_names.length);
+function renderTree(tasksOverride) {
+  const tasks = tasksOverride || state.tasks || [];
+  const signature = taskSignature(tasks);
+  if (renderedSignature === signature) return;
+  renderedSignature = signature;
+
+  const result = renderCherryBlossom(el("tree"), tasks);
+  const done = result.done;
   el("tree-caption").textContent =
-    state.stage_names[target] + " cherry blossom tree, growth stage " +
-    (target + 1) + " of " + state.stage_names.length;
+    "Cherry blossom tree carrying " + result.tasks + " task" +
+    (result.tasks === 1 ? "" : "s") + ", " + done + " in bloom";
+
+  wirePetalHover();
+}
+
+/* Hovering a petal names its task, and hovering a task lights its petal --
+ * without that the mapping is a claim rather than something you can see. */
+function wirePetalHover() {
+  document.querySelectorAll(".cbt-task").forEach((petal) => {
+    const id = petal.getAttribute("data-task-id");
+    petal.addEventListener("mouseenter", () => highlightTask(id, true));
+    petal.addEventListener("mouseleave", () => highlightTask(id, false));
+  });
+}
+
+function highlightTask(id, on) {
+  const row = document.querySelector('[data-quest-id="' + CSS.escape(id) + '"]');
+  if (row) row.classList.toggle("quest-lit", on);
+  const petal = document.querySelector('.cbt-task[data-task-id="' + CSS.escape(id) + '"]');
+  if (petal) petal.classList.toggle("cbt-task-lit", on);
 }
 
 function renderStages() {
@@ -127,8 +153,14 @@ function renderStages() {
   });
 }
 
+/* Preview shows the same tasks with more of them done -- "here is your day if
+ * you finish these" -- rather than an abstract stage. */
 function previewStage(index) {
-  renderTree(index);
+  const tasks = (state.tasks || []).map((task, position) => ({
+    ...task,
+    done: position < Math.round(((index + 1) / state.stage_names.length) * state.tasks.length),
+  }));
+  renderTree(tasks);
   el("stage-name").textContent = state.stage_names[index];
   document.querySelectorAll(".stage-button").forEach((button, position) => {
     button.classList.toggle("stage-button-active", position === index);
@@ -148,6 +180,9 @@ function renderQuests() {
   state.quests.forEach((quest) => {
     const item = document.createElement("article");
     item.className = "quest";
+    item.setAttribute("data-quest-id", quest.id);
+    item.addEventListener("mouseenter", () => highlightTask(quest.id, true));
+    item.addEventListener("mouseleave", () => highlightTask(quest.id, false));
 
     const check = document.createElement("button");
     check.className = "check-button";

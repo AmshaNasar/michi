@@ -147,11 +147,27 @@ def current_state() -> Dict[str, Any]:
     stale = store.stale_projects()
     stats = store.completion_stats()
     nudges = store.pending_nudges()
+    done_today = store.list_completed_today()
 
     quests = build_quests(deadlines, stale, now, tz)
     completed_today = stats["completed_today"]
     total = len(quests) + completed_today
     stage = tree_stage(completed_today)
+
+    # One blossom per task. Completed work stays on the tree in full bloom
+    # rather than vanishing -- the canopy is the whole day, not the backlog.
+    tasks = [
+        {"id": quest["id"], "title": quest["title"], "kind": quest["kind"], "done": False}
+        for quest in quests
+    ] + [
+        {
+            "id": "deadline-{0}".format(item["id"]),
+            "title": item["description"],
+            "kind": SOURCE_KIND.get(item["source"], "deadline"),
+            "done": True,
+        }
+        for item in done_today
+    ]
 
     if nudges:
         notice = nudges[0]["message"]
@@ -167,6 +183,7 @@ def current_state() -> Dict[str, Any]:
         "date": now_local.strftime("%A · %B %-d"),
         "notice": notice,
         "quests": quests,
+        "tasks": tasks,
         "completed_today": completed_today,
         "total_today": total,
         "progress": int(round(100 * completed_today / total)) if total else 0,

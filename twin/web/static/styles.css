@@ -1183,3 +1183,31 @@ img {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Bud state: work still outstanding. Paler and without a stamen, so a glance
+ * at the canopy tells you how much has actually been done. */
+.cbt-petal-closed {
+  fill: color-mix(in oklab, var(--petal-light) 82%, var(--background));
+  stroke: color-mix(in oklab, var(--petal-mid) 90%, transparent);
+  stroke-width: 0.5;
+}
+
+.cbt-bud { opacity: 0.9; }
+
+/* Petals are interactive, so they opt back into pointer events that
+ * .cbt-scene turns off for the decorative layers. */
+.cbt-task {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: filter 180ms ease;
+}
+
+.cbt-task:hover,
+.cbt-task-lit {
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 75%, transparent));
+}
+
+/* The other half of the pairing: hovering a petal lights its task row. */
+.quest-lit {
+  background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+}

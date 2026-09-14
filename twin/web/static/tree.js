@@ -119,7 +119,16 @@ function depthForStage(stage, stageCount) {
  * (stubby) while a 6-unit blossom reads as under 1% (invisible). Deriving both
  * from the span keeps the tree looking like the same tree at every size. */
 const TRUNK_FRACTION = 0.026;
-const BLOSSOM_FRACTION = 0.022;
+
+/* Blossom size scales inversely with how many there are.
+ *
+ * A fixed fraction cannot serve both ends: sized for a full canopy, a
+ * five-task day renders specks you can't identify; sized for five, a busy day
+ * becomes overlapping blobs. Each blossom is now a task you're meant to pick
+ * out, so few tasks means large flowers. */
+function blossomFractionFor(count) {
+  return Math.min(0.055, Math.max(0.018, 0.085 / Math.sqrt(Math.max(count, 1))));
+}
 const BASE_TRUNK_WIDTH = 32;
 const BASE_BLOSSOM_RADIUS = 6;
 
@@ -154,7 +163,7 @@ function fitViewBox(branches, blossoms) {
   );
 
   const strokeScale = (span * TRUNK_FRACTION) / BASE_TRUNK_WIDTH;
-  const blossomScale = (span * BLOSSOM_FRACTION) / BASE_BLOSSOM_RADIUS;
+  const blossomScale = (span * blossomFractionFor(blossoms.length)) / BASE_BLOSSOM_RADIUS;
 
   const full = bounds();
   branches.forEach((branch) => {
@@ -181,31 +190,51 @@ function element(name, attributes) {
   return node;
 }
 
-function blossomNode(blossom, scale) {
-  const radius = blossom.r * scale;
+/* A blossom, in one of two states.
+ *
+ * Done work is in full bloom; work still outstanding is a closed bud on the
+ * same branch. That's the whole metaphor: the tree's *size* is how much you're
+ * carrying, and how much of it is flowering is how much you've actually done. */
+function blossomNode(blossom, scale, task) {
+  const done = !task || task.done;
+  // A bud is smaller and tighter than an open flower.
+  const radius = blossom.r * scale * (done ? 1 : 0.82);
+
   const outer = element("g", {
     transform:
       "translate(" + blossom.x.toFixed(2) + " " + blossom.y.toFixed(2) +
       ") rotate(" + blossom.rot.toFixed(1) + ")",
   });
+  if (task) {
+    outer.setAttribute("class", "cbt-task");
+    outer.setAttribute("data-task-id", task.id);
+    const label = element("title", {});
+    label.textContent = task.title + (task.done ? " — done" : "");
+    outer.appendChild(label);
+  }
+
   // The inner group owns the bloom animation so its transform never clobbers
   // the placement transform on the outer one.
-  const inner = element("g", { class: "cbt-blossom" });
+  const inner = element("g", { class: "cbt-blossom" + (done ? "" : " cbt-bud") });
   inner.style.animationDelay = blossom.delay.toFixed(2) + "s";
 
   [0, 72, 144, 216, 288].forEach((angle) => {
     inner.appendChild(
       element("ellipse", {
         cx: 0,
-        cy: (-radius * 0.62).toFixed(2),
-        rx: (radius * 0.44).toFixed(2),
-        ry: (radius * 0.66).toFixed(2),
+        // A bud's petals are drawn tighter around the centre than an open
+        // flower's, so it reads as closed rather than merely small.
+        cy: (-radius * (done ? 0.62 : 0.34)).toFixed(2),
+        rx: (radius * (done ? 0.44 : 0.5)).toFixed(2),
+        ry: (radius * (done ? 0.66 : 0.55)).toFixed(2),
         transform: "rotate(" + angle + ")",
-        class: "cbt-petal cbt-petal-" + blossom.tone,
+        class: "cbt-petal cbt-petal-" + blossom.tone + (done ? "" : " cbt-petal-closed"),
       })
     );
   });
-  inner.appendChild(element("circle", { r: (radius * 0.2).toFixed(2), class: "cbt-stamen" }));
+  if (done) {
+    inner.appendChild(element("circle", { r: (radius * 0.2).toFixed(2), class: "cbt-stamen" }));
+  }
 
   outer.appendChild(inner);
   return outer;
@@ -213,19 +242,44 @@ function blossomNode(blossom, scale) {
 
 let cachedTree = null;
 
-/**
- * Render the tree into `container` at the given growth stage.
- */
-export function renderCherryBlossom(container, stage, stageCount, seed) {
-  if (!cachedTree) cachedTree = buildTree(seed || 20260912);
+/* How far out the tree has to reach to carry this many tasks.
+ *
+ * Each level roughly doubles the number of tips, so the canopy widens as work
+ * accumulates: a couple of tasks is a sapling, a full day's list is a spreading
+ * tree. Floor of 2 so an empty day still shows a trunk rather than nothing. */
+function depthForTaskCount(branches, taskCount) {
+  for (let depth = 2; depth <= MAX_DEPTH; depth++) {
+    const tips = branches.filter((branch) => branch.depth === depth - 1).length;
+    if (tips >= taskCount) return depth;
+  }
+  return MAX_DEPTH;
+}
 
-  const maxDepth = depthForStage(stage, stageCount);
+/**
+ * Render the tree into `container`.
+ *
+ * `tasks` is [{ id, title, kind, done }] -- one blossom each. The tree's
+ * structure is derived from how many there are, so adding a task genuinely
+ * branches the tree rather than just decorating it.
+ */
+export function renderCherryBlossom(container, tasks, options) {
+  const settings = options || {};
+  if (!cachedTree) cachedTree = buildTree(settings.seed || 20260912);
+
+  const list = Array.isArray(tasks) ? tasks : [];
+  const maxDepth = depthForTaskCount(cachedTree, Math.max(list.length, 1));
 
   const visible = cachedTree.filter((branch) => branch.depth < maxDepth);
-  const shownBlossoms = visible
-    .filter((branch) => branch.depth === maxDepth - 1)
-    .reduce((all, branch) => all.concat(branch.blossoms), []);
+  const tips = visible.filter((branch) => branch.depth === maxDepth - 1);
 
+  // Spread tasks evenly across the available tips instead of filling from one
+  // side, so three tasks sit across the canopy rather than bunched left.
+  const placements = list.map((task, index) => {
+    const tip = tips[Math.floor((index * tips.length) / Math.max(list.length, 1))] || tips[0];
+    return { task, blossom: tip && tip.blossoms[index % Math.max(tip.blossoms.length, 1)] };
+  }).filter((placement) => placement.blossom);
+
+  const shownBlossoms = placements.map((placement) => placement.blossom);
   const { box, groundRadius, strokeScale, blossomScale } = fitViewBox(visible, shownBlossoms);
 
   const svg = element("svg", {
@@ -260,8 +314,10 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
   // No fixed scale: the fitted viewBox already sizes the tree to the frame.
   const scaled = element("g", {});
 
-  // The canopy glow only makes sense once there's a canopy.
-  if (stage >= Math.floor(stageCount / 2) && shownBlossoms.length) {
+  // The glow marks a canopy actually in bloom, so it follows completed work
+  // rather than simply appearing whenever the tree is large.
+  const doneCount = placements.filter((placement) => placement.task.done).length;
+  if (shownBlossoms.length && doneCount >= Math.ceil(placements.length / 2)) {
     const cx = shownBlossoms.reduce((sum, b) => sum + b.x, 0) / shownBlossoms.length;
     const cy = shownBlossoms.reduce((sum, b) => sum + b.y, 0) / shownBlossoms.length;
     scaled.appendChild(
@@ -288,10 +344,10 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
     scaled.appendChild(path);
   });
 
-  // Only the outermost band blossoms, so the canopy sits at the tips rather
-  // than flowering all the way down the trunk.
-  shownBlossoms.forEach((blossom) => {
-    scaled.appendChild(blossomNode(blossom, blossomScale));
+  // One blossom per task, at the tips, so the canopy is literally the day's
+  // work rather than decoration sitting behind it.
+  placements.forEach((placement) => {
+    scaled.appendChild(blossomNode(placement.blossom, blossomScale, placement.task));
   });
 
   sway.appendChild(scaled);
@@ -299,7 +355,12 @@ export function renderCherryBlossom(container, stage, stageCount, seed) {
 
   container.innerHTML = "";
   container.appendChild(svg);
-  container.appendChild(buildDrifters(seed || 20260912, stage, stageCount));
+  // Petals only fall from a tree that has bloomed.
+  container.appendChild(
+    buildDrifters(settings.seed || 20260912, doneCount, Math.max(placements.length, 1))
+  );
+
+  return { depth: maxDepth, tasks: placements.length, done: doneCount };
 }
 
 function buildDrifters(seed, stage, stageCount) {
